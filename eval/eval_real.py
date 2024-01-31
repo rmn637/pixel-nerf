@@ -143,7 +143,7 @@ with torch.no_grad():
 
         # Load the second image (modify as needed)
         # Example: Assuming both images have the same file name but different directories
-        image2_path = os.path.join(args.input2, os.path.basename(image_path))
+        image2_path = os.path.join(args.input, os.path.basename(image_path))
         image2 = Image.open(image2_path).convert("RGB")
         image2 = T.Resize(in_sz)(image2)
         image2 = image_to_tensor(image2).to(device=device)
