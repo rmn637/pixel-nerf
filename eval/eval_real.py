@@ -133,14 +133,28 @@ image_to_tensor = util.get_image_to_tensor_balanced()
 
 with torch.no_grad():
     for i, image_path in enumerate(inputs):
+        # Loop over each input image
         print("IMAGE", i + 1, "of", len(inputs), "@", image_path)
-        image = Image.open(image_path).convert("RGB")
-        image = T.Resize(in_sz)(image)
-        image = image_to_tensor(image).to(device=device)
 
+        # Load the first image
+        image1 = Image.open(image_path).convert("RGB")
+        image1 = T.Resize(in_sz)(image1)
+        image1 = image_to_tensor(image1).to(device=device)
+
+        # Load the second image (modify as needed)
+        # Example: Assuming both images have the same file name but different directories
+        image2_path = os.path.join(args.input2, os.path.basename(image_path))
+        image2 = Image.open(image2_path).convert("RGB")
+        image2 = T.Resize(in_sz)(image2)
+        image2 = image_to_tensor(image2).to(device=device)
+
+        # Encoding both images
         net.encode(
-            image.unsqueeze(0), cam_pose.unsqueeze(0), focal,
+            torch.stack([image1, image2]),  # Stack the images along a new dimension
+            cam_pose.unsqueeze(0),
+            focal,
         )
+
         print("Rendering", args.num_views * H * W, "rays")
         all_rgb_fine = []
         for rays in tqdm.tqdm(torch.split(render_rays.view(-1, 8), 80000, dim=0)):
@@ -157,10 +171,12 @@ with torch.no_grad():
         frames_dir_name = os.path.join(args.output, im_name + "_frames")
         os.makedirs(frames_dir_name, exist_ok=True)
 
+        # Saving individual frames as images
         for i in range(args.num_views):
             frm_path = os.path.join(frames_dir_name, "{:04}.png".format(i))
             imageio.imwrite(frm_path, frames[i])
 
+        # Saving video (if specified)
         if not args.no_vid:
             if args.gif:
                 vid_path = os.path.join(args.output, im_name + "_vid.gif")
